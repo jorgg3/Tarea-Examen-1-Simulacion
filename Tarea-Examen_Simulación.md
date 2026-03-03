@@ -1,0 +1,401 @@
+Tarea-Examen 1: Simulación Estocástica
+================
+José Jorge Martínez de la Cruz
+2026-03-03
+
+## Problema 1
+
+Usando el método congruencial lineal simple, genere una muestra de 1000
+números aleatorios. Encuentre los valores de $x_0$, $a$, $c$ y $M$ tales
+que el periodo sea mayor o igual a 1000. Usando un teorema de los que se
+han expuesto, compruebe que se cumplen las condiciones necesarias para
+obtener el periodo de la sucesión. Además, agregue el cálculo de la
+media y la varianza muestral, y los gráficos de dispersión e histograma
+¿se parece a algo uniforme?.
+
+### Solución:
+
+Para generar una sucesión con un periodo $N \ge 1000$, utilizaremos el
+Generador Congruencial Lineal Simple, definido en clase de forma
+recursiva como: $$x_i = (a x_{i-1} + c) \pmod M$$
+
+De acuerdo con los resultados vistos en clase, este generador tiene un
+periodo máximo $N = M$ si, y sólo si;
+
+1.  $\text{mcd}(c, M) = 1$.
+2.  $a \equiv 1 \pmod q$, para todo $q$ que sea factor primo de $M$.
+3.  Si $M \equiv 0 \pmod 4$ ($M$ es múltiplo de 4), entonces $a-1$
+    también debe serlo.
+
+Para garantizar un periodo de exactamente 1000, propondremos $M = 1000$.
+Evaluemos las condiciones para seleccionar adecuadamente la semilla
+$x_0$, $a$ y $c$:
+
+- ($M$): $1000$. Sus únicos factores primos son $q_1 = 2$ y $q_2 = 5$.
+  Notemos además que $1000$ es múltiplo de 4 ($1000 \equiv 0 \pmod 4$).
+- ($c$): Debe ser primo relativo con 1000. Podemos elegir $c = 7$, con
+  lo cual verificamos que $\text{mcd}(7, 1000) = 1$ garantizadno que se
+  cumple la primer condición.
+- ($a$): Para cumplir las condiciones 2 y 3, el término $a-1$ debe ser
+  múltiplo de los factores primos (2 y 5) y también múltiplo de 4. El
+  mínimo común múltiplo de 2, 5 y 4 es 20. Por lo tanto, pedimos que
+  $a - 1 = 20 \implies a = 21$.
+  - $21 \equiv 1 \pmod 2$
+  - $21 \equiv 1 \pmod 5$
+  - $21 - 1 = 20$, que es múltiplo de 4
+- ($x_0$): Puede ser cualquier entero en el rango $0 \le x_0 < M$.
+  Seleccionamos $x_0 = 236$.
+
+Con los valores $M = 1000$, $a = 21$, $c = 7$ y $x_0 = 236$, el teorema
+garantiza que las condiciones necesarias se cumplen para obtener un
+periodo de la sucesión $N = 1000$.
+
+Implementamos el algoritmo para generar los números en el intervalo
+$(0,1)$, calculados mediante la transformación $u_i = x_i / M$.
+
+``` r
+# Definición de parámetros
+M <- 1000
+a <- 21
+c <- 7
+x0 <- 236
+n <- 1000  #Tamaño
+
+# Resultados
+x <- numeric(n)
+u <- numeric(n)
+
+# Implementamos el Generador Congruencial Lineal Simple
+x_1 <- x0
+for (i in 1:n) {
+  x[i] <- (a * x_1 + c) %% M
+  u[i] <- x[i] / M
+  x_1 <- x[i] 
+}
+
+# Estadísticos
+media_muestral <- mean(u)
+varianza_muestral <- var(u)
+
+#Resultados
+cat("Media muestral:", round(media_muestral, 4), "\n")
+```
+
+    ## Media muestral: 0.4995
+
+``` r
+cat("Varianza muestral:", round(varianza_muestral, 4), "\n")
+```
+
+    ## Varianza muestral: 0.0834
+
+``` r
+# graficamos en la misma fila
+par(mfrow = c(1, 2))
+
+# diagrama de dispersión
+plot(1:n, u, 
+     main = "Diagrama de Dispersión",
+     xlab = "índice", 
+     ylab = "u_i",
+     pch = 20, col = "red", cex = 0.6)
+
+# Histograma de frecuencias
+hist(u, 
+     main = "Histograma",
+     xlab = "u_i", 
+     ylab = "Frecuencia",
+     col = "lightgreen", border = "black", breaks = 10)
+```
+
+![](Tarea-Examen_Simulación_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+Para determinar si la muestra obtenida se acerca a una distribución
+uniforme, analizamos los estadísticos y los elementos gráficos
+generados:
+
+En principio, los valores teóricos de una distribución $Unif(0,1)$ son
+$E(U) = 1/2 = 0.5$ y $Var(U) = 1/12 \approx 0.0833$. Como observamos en
+los resultados del código, la media y la varianza muestral calculadas se
+aproximan muy bien a estos valores teóricos. De acuerdo con la teoría,
+cuando los puntos son realmente aleatorios, su distribución es homogénea
+en el eje vertical y la sucesión de puntos no presenta ninguna tendencia
+como función del índice. Nuestra gráfica cumple con estas
+características, mostrándose como una nube de puntos sin un patrón.
+También podemos observar en el histograma que las alturas de las barras
+en cada subintervalo de la partición tienden a ser parecidas, esto pasa
+cuando los datos se distribuyen de manera uniforme a lo largo del
+intervalo $(0,1)$.
+
+Basándonos en la evidencia de los estadísticos muestrales y en que las
+gráficas cumplen con los criterios teóricos, la sucesión generada sí se
+parece a una distribución uniforme.
+
+## Problema 2
+
+Bajar una serie de 200 precios diarios de Yahoo! Finance o alguna otra
+plataforma. Realice una prueba de Kolmogorov-Smirnov para evaluar si
+existe evidencia estadística de uniformidad en los datos, calculando el
+estadístico de prueba y el p-value. Concluya y explique si se rechaza o
+no la hipótesis nula. Posteriormente, realice este mismo análisis para
+los cambios porcentuales (rendimientos discretos), ahora use un comando
+para la prueba K-S.
+
+### Solución
+
+Descargaremos los precios diarios usando la librería `quantmod`. Además,
+dado que la prueba K-S expuesta se plantea para números pseudoaleatorios
+en el intervalo $(0,1)$, normalizaremos los precios a este intervalo
+para evaluar la hipótesis de que provienen de una distribución
+$Unif(0,1)$.
+
+De acuerdo con los temas vistos en la ayudantía, las hipótesis a
+contrastar son: $H_0: F(x) = F^*(x)$ $\forall x$, $x \in \mathbb{R}$
+$H_a: F(x) \ne F^*(x)$ para al menos un valor de $x \in \mathbb{R}$
+
+Donde $F^*(x) = x$ para $x \in (0,1)$.
+
+``` r
+library(quantmod)
+```
+
+    ## Warning: package 'quantmod' was built under R version 4.5.1
+
+    ## Cargando paquete requerido: xts
+
+    ## Warning: package 'xts' was built under R version 4.5.1
+
+    ## Cargando paquete requerido: zoo
+
+    ## 
+    ## Adjuntando el paquete: 'zoo'
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     as.Date, as.Date.numeric
+
+    ## Cargando paquete requerido: TTR
+
+    ## Warning: package 'TTR' was built under R version 4.5.1
+
+    ## Registered S3 method overwritten by 'quantmod':
+    ##   method            from
+    ##   as.zoo.data.frame zoo
+
+``` r
+# vamos a descargar datos de META/Facebook (META)
+getSymbols("META", from = Sys.Date() - 350, to = Sys.Date(), periodicity = "daily")
+```
+
+    ## [1] "META"
+
+``` r
+precios <- as.numeric(tail(Cl(META), 200)) # Últimos 200 precios de cierre
+
+# normalizamos al intervalo (0,1)
+u_precios <- (precios - min(precios)) / (max(precios) - min(precios))
+n <- length(u_precios)
+```
+
+Comenzamos a calcular los estadísticos para la prueba de Kolmogorov:
+
+``` r
+#función de distribución empírica Fn(x) y estadístico T 
+
+u_precios_ord <- sort(u_precios) # ordenamso el vector de precios normalizados de menor a mayor.  
+
+Fn <- (1:n) / n  #hacemos la secuencia de probabilidades acumuladas (1/n, 2/n, ..., n/n)
+
+# como estamos con una uniforme, la distribución teórica es F*(x) = x.
+# asignamos los valores directamente evaluando la función teórica sobre nuestros datos ordenados.
+F_star <- u_precios_ord 
+
+# ahora calculamos el supremo entre las diferencias de ambas distribuciones.
+T_stat <- max(abs(F_star - Fn))
+```
+
+Calculamos ahora sí el p-value, implementamos la fórmula usando
+logaritmos para evitar overflow (que se nos haga un redondeo innecesario
+a 0) en los factoriales de las combinaciones.
+
+``` r
+# calculamos el p-value
+
+limite <- floor(n * (1 - T_stat)) # límite superior de la suma en la fórmula: [n(1 - T)].
+j <- 0:limite # índice  sobre el cual se va a iterar en la suma
+
+
+# Se aplican logaritmos a toda la expresión dentro de la suma para evitar desbordamientos numéricos al calcular factoriales y potencias grandes.
+
+log_terms <- lchoose(n, j) + (n - j) * log(1 - T_stat - j/n) + (j - 1) * log(T_stat + j/n)
+
+p_val_terminos <- exp(log_terms) # revertimos el cálculo logarítmico
+
+
+#ahora sí, aplicamos la fórmula
+p_value <- 2 * T_stat * sum(p_val_terminos)
+
+#Resultados
+cat("Estadístico  T :", T_stat, "\n")
+```
+
+    ## Estadístico  T : 0.1157691
+
+``` r
+cat("p-value:", p_value, "\n")
+```
+
+    ## p-value: 0.008605175
+
+Rechazamos la hipótesis nula $H_0$ cuando el $p-value < \alpha$. Tomando
+un nivel de significancia de $\alpha = 0.05$, observamos que el
+$p-value$ es menor a $\alpha$. Se rechaza la hipótesis nula. Esto indica
+que existe evidencia significativa de que los precios diarios no
+provienen de una distribución uniforme. Es un resultado lógicamente
+esperado, ya que los precios siguen trayectorias con tendencia y
+seguramente tienen alta dependencia.
+
+Ahora, calcularemos los cambios porcentuales (rendimientos discretos),
+definidos en clase como $R_t = \frac{P_t - P_{t-1}}{P_{t-1}}$.
+Realizaremos el mismo análisis, pero usando el comando de R para la
+prueba Kolmogorov-Smirnov.
+
+``` r
+# calculamos los rendimientos discretos
+rendimientos <- diff(precios) / head(precios, -1)
+
+# normalizamos los rendimientos 
+u_rend <- (rendimientos - min(rendimientos)) / (max(rendimientos) - min(rendimientos))
+
+# aplicamos K-S 
+ks_test_rend <- ks.test(u_rend, "punif")
+#resultados
+print(ks_test_rend)
+```
+
+    ## 
+    ##  Asymptotic one-sample Kolmogorov-Smirnov test
+    ## 
+    ## data:  u_rend
+    ## D = 0.35263, p-value < 2.2e-16
+    ## alternative hypothesis: two-sided
+
+Analizando las salidas de la función ks.test(), nos fijamos nuevamente
+en el valor del $p-value$. Dado que este valor es inferior al nivel de
+significancia $\alpha = 0.05$, rechazamos la hipótesis nula $H_0$. Por
+tanto, concluimos que tampoco existe evidencia estadística de
+uniformidad en los rendimientos discretos.
+
+## Problema 3
+
+Considerando los últimos 10 rendimientos del Problema 2, programe su
+función de distribución empírica, encuentre su inversa generalizada y a
+partir de ésta y una muestra de 100 datos uniformes genere 100 datos con
+dicha distribución. Grafíquelos. Por último, considerando 1 (una) sola
+simulación de los rendimientos (de las 100 totales) de una simulación
+para el precio de mañana (el siguiente precio).
+
+### Solución
+
+Dada una muestra de observaciones, la función de distribución empírica
+$F_n(x)$ se define como la proporción de datos que son menores o iguales
+a $x$. Su inversa generalizada, denotada como $F_n^{-1}(u)$, la
+definimos en clase como:
+$$F_n^{-1}(u) = \inf \{x \in \mathbb{R} : F_n(x) \ge u\}, \quad \text{para } u \in (0,1)$$
+Esta inversa generalizada nos dice que dado un número aleatorio uniforme
+$u \in (0,1)$, ¿qué dato de mi muestra viene o corresponde a ese
+percentil?
+
+Computacionalmente, lo que haremos será: 1. Ordenaremos los $10$ datos
+de menor a mayor: $x_{(1)} \le x_{(2)} \le \dots \le x_{(10)}$. 2.
+Multiplicaremos el tamaño de la muestra por la probabilidad simulada
+($10 \times u$) para encontrar la posición del dato. 3. Como la
+probabilidad acumulada da saltos discretos, aplicamos la función techo
+para obtener un índice entero $k = \lceil 10 \times u \rceil$. Esto
+redondea hacia arriba, asegurando que seleccionamos el dato exacto donde
+la función escalonada alcanza o supera la probabilidad $u$. 4.
+Retornamos el valor en esa posición: $x_{(k)}$.
+
+``` r
+# extraemos y ordenamos los últimos 10 rendimientos del problema 2
+ultimos_10_rend <- tail(rendimientos, 10)
+
+rend_ordenados <- sort(ultimos_10_rend) #ordenamos los datos 
+
+
+# programaremos la función de la inversa generalizada,  la cual tomará como argumentos un vector de probabilidades 'u' y los datos ordenados
+inversa_empirica <- function(u, datos_ordenados) {
+  n <- length(datos_ordenados)
+  
+  indice <- ceiling(n * u)
+  
+  return(datos_ordenados[indice])
+}
+
+# generamos 100 datos uniformes
+set.seed(236) # fijamos la semilla 
+u_sim <- runif(100)
+
+# simulamos 100 rendimientos  usando la inversa generalizada 
+rend_simulados <- inversa_empirica(u_sim, rend_ordenados)
+```
+
+A continuación, visualizamos la función de distribución empírica
+escalonada para los 10 rendimientos base, y a su lado, el histograma de
+frecuencias de los 100 rendimientos generados a partir de su inversa
+generalizada.
+
+``` r
+par(mfrow = c(1, 2))
+
+Fn_10 <- (1:10) / 10 #probabilidades acumuladas para los 10 datos (1/10, 2/10... 10/10)
+
+plot(rend_ordenados, Fn_10, type = "s", #type = "s" genera la gráfica de escalones
+     main = "Función de Distribución Empírica",
+     xlab = "Rendimientos (x)", 
+     ylab = expression(F[n](x)),
+     col = "red", lwd = 2)
+
+
+# histograma de los 100 Rendimientos Simulados
+hist(rend_simulados, 
+     main = "Histograma de Rendimientos",
+     xlab = "Rendimiento",
+     ylab = "Frecuencia",
+     col = "lightgreen", 
+     border = "black",
+     breaks = 15)
+```
+
+![](Tarea-Examen_Simulación_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+Para simular el precio de mañana ($P_{T+1}$), tomaremos el último precio
+conocido de nuestra serie original ($P_T$) y le aplicaremos uno de los
+rendimientos simulados mediante la
+fórmula:$$P_{T+1} = P_T \times (1 + R_{sim})$$
+
+``` r
+un_rend_simulado <- rend_simulados[27] # tomamos 1 simulación de las 100 generadas
+
+
+precio_hoy <- as.numeric(tail(precios, 1)) # último precio  observado en nuestra serie 
+
+
+precio_nuevo <- precio_hoy * (1 + un_rend_simulado)# fórmula del rendimiento discreto 
+
+#Resultados
+cat("Precio de hoy (PT):", round(precio_hoy, 4), "\n")
+```
+
+    ## Precio de hoy (PT): 653.56
+
+``` r
+cat("Rendimiento simulado (R_sim):", round(un_rend_simulado, 6), "\n")
+```
+
+    ## Rendimiento simulado (R_sim): 0.016874
+
+``` r
+cat("Precio simulado para mañana (PT+1):", round(precio_nuevo, 4), "\n")
+```
+
+    ## Precio simulado para mañana (PT+1): 664.5881
